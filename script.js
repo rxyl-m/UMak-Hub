@@ -815,3 +815,37 @@ searchbar?.addEventListener('input', () => {
 if (!studentPageContent) updateTracker();
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+
+// ═══════════════════════════════════════════════
+//   GLOBAL SIDEBAR POPULATOR
+// ═══════════════════════════════════════════════
+(async () => {
+  const sidebarName = document.getElementById('sidebarName');
+  if (!sidebarName) return; // Only run if the sidebar exists on the page
+  
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+  if (!profile) return;
+
+  sidebarName.textContent = `${profile.last_name || ''}, ${profile.first_name || ''}`;
+  
+  const metaEl = document.getElementById('sidebarMeta');
+  if (metaEl) metaEl.textContent = `${profile.section || ''} · ${profile.school || ''}`;
+  
+  const avatarEl = document.getElementById('sidebarAvatar');
+  if (avatarEl) {
+    const initials = ((profile.first_name?.[0]||'') + (profile.last_name?.[0]||'')).toUpperCase();
+    
+    if (profile.avatar_url && profile.avatar_url !== 'null') {
+      // Includes an error fallback just in case the image ever fails to load!
+      avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'; this.parentNode.innerHTML='${initials}'; this.parentNode.style.background='var(--navy-soft)';"/>`;
+      avatarEl.style.background = 'transparent';
+    } else {
+      avatarEl.innerHTML = initials;
+      avatarEl.style.background = 'var(--navy-soft)';
+    }
+  }
+})();
